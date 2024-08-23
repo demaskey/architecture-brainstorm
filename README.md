@@ -61,7 +61,7 @@ flowchart
     DB")]
     apiCreate --> createdDb
 
-    createApi --> |pub event|sqs[SQS]
+    apiCreate --> |pub event|sqs[SQS]
     sns[SNS] --- sqs & lambda[Lambda]
     lambda --> sqs & apiTake
 
