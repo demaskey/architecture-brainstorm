@@ -2,24 +2,41 @@
 
 ```mermaid
 flowchart TD
-    webClient[Web Client] --> restApi[REST API]
+    subgraph Clients
+        webClient[Web Client]
+        mobileClient[Mobile Client]
+    end
+    subgraph API
+        restApi[REST API]
+        db[(Relational DB)]
+    end
+    subgraph "Asynchronous Request-Reply"
+        ai[LLM / Gen AI]
+        sqs[SQS]
+        sns[SNS]
+        lambda[Lambda]
+        s3[S3 Bucket]
+    end
+    idp[Identity Provider]
+
+    webClient --> restApi
+    mobileClient --> restApi
     webClient -.- |polling|restApi
-    mobileClient[Mobile Client] --> restApi
     mobileClient  -.- |polling|restApi
     
-    restApi --> db[(Relational DB)]
-    restApi --> sqs[SQS]
+    restApi --> db
+    restApi --> sqs
     restApi --> s3
     restApi -.- |polling|s3
     
-    lambda[Lambda] --> sqs
-    lambda --> ai[LLM / Gen AI]
-    ai --> s3[S3 Bucket]
+    lambda --> sqs
+    lambda --> ai
+    ai --> s3
     
-    sns[SNS] --- sqs
+    sns --- sqs
     sns --- lambda
 
-    idp[Identity Provider] -.- restApi
+    idp -.- restApi
 ```
 - Utilize the Asynchronous Request-Reply pattern
 
@@ -29,14 +46,32 @@ flowchart TD
 - Don't overwhelm a vender
 ``` mermaid
 flowchart 
-    webclient["Web 
+    webClient["Web 
     Client"] 
     apiCreate["Create Assess. 
     REST API"]
-    mobileclient["Mobile
+    mobileClient["Mobile
     Client"]
     apiTake["Take Assess.
     REST API"]
 
-    webclient & mobileclient --> apiCreate & apiTake
+    webClient & mobileClient --> apiCreate & apiTake
+
+    createdDb[("Relational
+    DB")]
+    apiCreate --> createdDb
+
+    createApi --> |pub event|sqs[SQS]
+    sns[SNS] --- sqs & lambda[Lambda]
+    lambda --> sqs & apiTake
+
+    takeDb[("Document
+    DB")]
+    apiTake --> takeDb
+
+    redisCache[Redis]
+    idp["Identity
+    Provider"]
+
+    apiTake --> redisCache & idp
 ```
