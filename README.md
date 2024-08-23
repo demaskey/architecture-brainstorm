@@ -45,33 +45,47 @@ flowchart TD
 - Reliability
 - Don't overwhelm a vender
 ``` mermaid
-flowchart 
-    webClient["Web 
-    Client"] 
-    apiCreate["Create Assess. 
-    REST API"]
-    mobileClient["Mobile
-    Client"]
-    apiTake["Take Assess.
-    REST API"]
-
-    webClient & mobileClient --> apiCreate & apiTake
-
-    createdDb[("Relational
-    DB")]
-    apiCreate --> createdDb
-
-    apiCreate --> |pub event|sqs[SQS]
-    sns[SNS] --- sqs & lambda[Lambda]
-    lambda --> sqs & apiTake
-
-    takeDb[("Document
-    DB")]
-    apiTake --> takeDb
-
-    redisCache[Redis]
+flowchart TB
+    subgraph Clients
+        webClient["Web 
+        Client"] 
+        mobileClient["Mobile
+        Client"]
+    end
+    subgraph Create Assessment API
+        apiCreate["Create Assess. 
+        REST API"]
+        createdDb[("Relational
+        DB")]
+    end
+    subgraph Take Assessment API
+        apiTake["Take Assess.
+        REST API"]
+        takeDb[("Document
+        DB")]
+    end
+    subgraph Pub/Sub
+        sqs[SQS]
+        lambda[Lambda]
+        sns[SNS]
+    end
+    subgraph Cache Aside
+        redisCache[Redis]
+    end
     idp["Identity
     Provider"]
 
-    apiTake --> redisCache & idp
+    webClient & mobileClient --> apiCreate & apiTake
+    
+    apiCreate --> createdDb
+
+    apiCreate --> |pub event|sqs
+    sns --- sqs & lambda
+    lambda --> sqs & apiTake
+
+    apiTake --> takeDb
+
+    apiTake --> redisCache
+    apiTake -.- |Retry & Circuit Breaker|idp
+    redisCache -.- idp
 ```
